@@ -6,10 +6,10 @@
   when:
     - mongodb_package == 'mongodb-org'
     - mongos_package == 'mongodb-org-mongos'
-    - mongodb_major_version is not regex("3.4|3.6|4.0|4.2|4.4|5.0|6.0")
+    - mongodb_major_version is not regex("3.4|3.6|4.0|4.2|4.4|5.0|6.0|7.0")
     - ansible_os_family == 'RedHat'
   tags: [mongodb, mongos, mongodb-install, mongos-install]
-  
+
 - name: Install EPEL Release Repository
   package:
     name: epel-release
@@ -45,9 +45,8 @@
 
 - name: Install MongoDB Package '{{ mongodb_version }}'
   yum:
-    name: 
+    name:
       - "{{ mongodb_package + '-server=' + mongodb_version if mongodb_version | length > 3 else mongodb_package + '-server' }}"
-      - "{{ mongodb_package + '-shell=' + mongodb_version if mongodb_version | length > 3 else mongodb_package + '-shell' }}"
       - "{{ mongodb_package + '-tools=' + mongodb_version if mongodb_version | length > 3 else mongodb_package + '-tools' }}"
     state: "{{ mongodb_package_state }}"
     lock_timeout: "{{ yum_lock_timeout }}"
@@ -61,6 +60,14 @@
     lock_timeout: "{{ yum_lock_timeout }}"
   when: mongodb_main_group == mongos_host_group
   tags: [mongos, mongos-install]
+
+- name: Install Mongo shell When MongoDB Version < '4.4'
+  yum:
+    name: "{{ mongodb_package + '-shell=' + mongodb_version if mongodb_version | leng    th > 3 else mongodb_package + '-shell' }}"
+    state: present
+    lock_timeout: "{{ yum_lock_timeout }}"
+  when: mongodb_major_version is version('4.4', '<')
+  tags: [mongodb, mongos, mongodb-install, mongos-install]
 
 - name: Install Mongosh When MongoDB Version >= '4.4'
   yum:
